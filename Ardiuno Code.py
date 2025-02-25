@@ -59,7 +59,7 @@ except KeyboardInterrupt:
     timestr = time.strftime("%d_%m_%Y") 
     
     Filename = input("Enter Filename:")
-    f = open(Filename + '_' + timestr + '_Data.txt','w')
+    f = open("DataDay1/" + Filename + '_' + timestr + '_Data.txt','w')
     f.write('Time\tax\tay\taz\tgx\tgy\tgz\n')
     for i in range(len(ax)):
         f.write('%s\t%s\t%s\t%s\t%s\t%s\t%s\n' % (t[i],ax[i],ay[i],az[i],gx[i],gy[i],gz[i]))
