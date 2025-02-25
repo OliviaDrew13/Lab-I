@@ -6,7 +6,7 @@ import serial
 import time
 
 #establish serial connection to Arduino/GY521
-ser = serial.Serial('COM3', 38400) #Baud rate 38400 Hz, COM port must match.
+ser = serial.Serial('COM5', 38400) #Baud rate 38400 Hz, COM port must match.
 
 for i in range(0,3):
     #Inital lines from GY521, we can ignore them
