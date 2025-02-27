@@ -86,21 +86,24 @@ def plotting(x, y, xyLabels, labels, types, labelsOn = True, extents = None, gri
     
 def rotation(time, aX, aY, aZ, gX, gY, gZ):
     #flipping signs
-    # gX, gY, gZ = -gX, -gY, -gZ
+    gX, gY, gZ = -gX, -gY, -gZ
     
     #finding the respective rotational angles in radians
-    radT = np.pi/180
-    rX = scI.cumulative_trapezoid(gX, None, 0.01)*radT
-    rY = scI.cumulative_trapezoid(gY, None, 0.01)*radT
-    rZ = scI.cumulative_trapezoid(gZ, None, 0.01)*radT
-    #rX = gX*time*radT
-    #rY = gY*time*radT
-    #rZ = gZ*time*radT    
+    # radT = np.pi/180
+    # rX = scI.cumulative_trapezoid(gX, None, 0.01)*radT
+    # rY = scI.cumulative_trapezoid(gY, None, 0.01)*radT
+    # rZ = scI.cumulative_trapezoid(gZ, None, 0.01)*radT
+    rX = np.deg2rad(gX)
+    rY = np.deg2rad(gY)
+    rZ = np.deg2rad(gZ)
 
     #setting up acceleration vectors
     rAX = []
     rAY = []
     rAZ = []
+    
+    gravity = 9.81
+    
     for i in range(len(aX)-1):
         accVec = []
         accVec = np.array([aX[i], aY[i], aZ[i]])
@@ -108,31 +111,32 @@ def rotation(time, aX, aY, aZ, gX, gY, gZ):
         rotMatY = np.array([[np.cos(rY[i]), 0, np.sin(rY[i])], [0, 1, 0], [-np.sin(rY[i]), 0, np.cos(rY[i])]])
         rotMatZ = np.array([[np.cos(rZ[i]), -np.sin(rZ[i]) ,0], [np.sin(rZ[i]), np.cos(rZ[i]), 0], [0, 0, 1]])
         
-        rotatedX = np.matmul(rotMatX, accVec)
-        rotatedY = np.matmul(rotMatY, rotatedX)
-        rotatedZ = np.matmul(rotMatZ, rotatedY)
+        rotatedZ = np.matmul(rotMatZ, accVec)
+        rotatedY = np.matmul(rotMatY, rotatedZ)
+        rotatedX = np.matmul(rotMatX, rotatedY)
         
-        rAX.append(rotatedZ[0])
-        rAY.append(rotatedZ[1])
-        rAZ.append(rotatedZ[2])
+        rAX.append(rotatedX[0])
+        rAY.append(rotatedX[1])
+        rAZ.append(rotatedX[2])
     
+    # rAZ = np.array(rAZ)-gravity
     
     plotting([time.iloc[1:],time.iloc[1:],time.iloc[1:]], [rAX,rAY,rAZ], ["Time (s)", "Acceleration (m/s$^2$)"], ['$a_y$','$a_y$','$a_z$'], ["pl", "pl", "pl"])
     
-    return(rAX,rAY,rAZ)
+    return(time.iloc[1:],rAX,rAY,rAZ)
 
-def integrationTrapezoid(X,Y,Z,time,dt):
+def integrationTrapezoid(time,X,Y,Z,dt):
     
     # Integrating the acceleration arrays to get velocity
-    XI = scI.cumulative_trapezoid(X,None,dt)
-    YI = scI.cumulative_trapezoid(Y,None,dt)
-    ZI = scI.cumulative_trapezoid(Z,None,dt)
+    XI = scI.cumulative_trapezoid(X,time)
+    YI = scI.cumulative_trapezoid(Y,time)
+    ZI = scI.cumulative_trapezoid(Z,time)
     timeI = time[1:]
     
     return(XI, YI, ZI, timeI)
 
 def plotting3D(x, y, z, axisLabels):
-    fig = plt.figure(figsize=(8,8))
+    fig = plt.figure(figsize=(5,5))
     ax = fig.add_subplot(projection="3d")
     
     ax.plot(x,y,z)
@@ -140,7 +144,8 @@ def plotting3D(x, y, z, axisLabels):
     ax.set_ylabel(axisLabels[1])
     ax.set_zlabel(axisLabels[2])
 
-filePaths = ["DataDay1/yMoveTest1_25_02_2025_Data.txt"]
+filePaths = ["DataDay1/xMoveTest1_25_02_2025_Data.txt"]
+# filePaths = ["DataDay1/yMoveTest1_25_02_2025_Data.txt"]
 
 for file in filePaths:
     
@@ -149,15 +154,39 @@ for file in filePaths:
     #dataF = dataF.dropna() 
     
     t, ax, ay, az, gx, gy, gz = dataF["Time"], dataF["ax"], dataF["ay"], dataF["az"], dataF["gx"], dataF["gy"], dataF["gz"]
-    rAX, rAY, rAZ = rotation(t, ax, ay, az, gx, gy, gz)
-    vx, vy, vz, vTime = integrationTrapezoid(rAX, rAY, rAZ, t, 0.01)    
-    rxPos,ryPos,rzPos, posTime = integrationTrapezoid(vx, vy, vz, t, 0.01)
+    az=np.array(az)-9.81
+    vx, vy, vz, vTime = integrationTrapezoid(t, ax, ay, az, 0.01)
+    x,y,z, posTime = integrationTrapezoid(vTime, vx, vy, vz, 0.01)
+    
+    raTime, rAX, rAY, rAZ = rotation(t, ax, ay, az, gx, gy, gz)
+    rVX, rVY, rVZ, rvTime = integrationTrapezoid(raTime, rAX, rAY, rAZ, 0.01)
+    rX,rY,rZ, rposTime = integrationTrapezoid(rvTime, rVX, rVY, rVZ, 0.01)
+    # change order idiot
     
     #plot results            
     plotting([t,t,t], [ax,ay,az], ["Time (s)", "Acceleration (m/s$^2$)"], ['$a_y$','$a_y$','$a_z$'], ["pl", "pl", "pl"])
     plotting([t,t,t], [gx,gy,gz], ["Time (s)", "Angular Velocity (deg/s)"], ['$\\omega_x$','$\\omega_y$','$\\omega_z$'], ["pl", "pl", "pl"])
     
-    plotting3D(rxPos,ryPos,rzPos, ["x","y","z"])
+    plotting3D(rX,rY,rZ, ["x","y","z"])
+    
+    # plotting([rposTime, posTime],[rX, x],["t","x"],["Rotated", "Unrotated"],["pl", "pl"])
+    # plotting([rposTime, posTime],[rY, y],["t","y"],["Rotated", "Unrotated"],["pl", "pl"])
+    # plotting([rposTime, posTime],[rZ, z],["t","z"],["Rotated", "Unrotated"],["pl", "pl"])
+    
+    # plotting([rvTime, vTime],[rVY, vy],["t","vy"],["Rotated", "Unrotated"],["pl", "pl"])
+    # plotting([rvTime, vTime],[rVX, vx],["t","vx"],["Rotated", "Unrotated"],["pl", "pl"])
+    # plotting([rvTime, vTime],[rVZ, vz],["t","vz"],["Rotated", "Unrotated"],["pl", "pl"])
+    
+    # plotting([raTime, t],[rAY, ay],["t","ay"],["Rotated", "Unrotated"],["pl", "pl"])
+    # plotting([raTime, t],[rAX, ax],["t","ax"],["Rotated", "Unrotated"],["pl", "pl"])
+    # plotting([raTime, t],[rAZ, az],["t","az"],["Rotated", "Unrotated"],["pl", "pl"])
     
     print(f"The max acceleration is: {az.max()}\nThe max angular velocity is: {gz.max()}")
+    
+    func = 5*np.sin(t)
+    intfunc = scI.cumulative_trapezoid(func,t)
+    fig,ax=plt.subplots()
+    ax.plot(t, func, label = "f")
+    ax.plot(t[1:],intfunc-5, label= "fint")
+    ax.legend()
     
