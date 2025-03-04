@@ -6,7 +6,7 @@ import serial
 import time
 
 #establish serial connection to Arduino/GY521
-ser = serial.Serial('COM5', 38400) #Baud rate 38400 Hz, COM port must match.
+ser = serial.Serial('COM6', 250000) #Baud rate 38400 Hz, COM port must match.
 
 for i in range(0,3):
     #Inital lines from GY521, we can ignore them
@@ -44,7 +44,8 @@ except KeyboardInterrupt:
 
         ss = Out[i].decode("utf-8","ignore").replace('\r\n','').split('\t')
 
-        if ss[0] == 'a/g:': #now convert to "real" values e.g. +/- 2g divded by resolution
+        if ss[0] == 'a/g:' and len(ss) == 8: #now convert to "real" values e.g. +/- 2g divded by resolution
+            print(ss)
             ax.append(int(ss[1])*a_sen*2/res)
             ay.append(int(ss[2])*a_sen*2/res)
             az.append(int(ss[3])*a_sen*2/res)
@@ -59,7 +60,7 @@ except KeyboardInterrupt:
     timestr = time.strftime("%d_%m_%Y") 
     
     Filename = input("Enter Filename:")
-    f = open("DataDay1/" + Filename + '_' + timestr + '_Data.txt','w')
+    f = open("DataDay2SRFix/" + Filename + '_' + timestr + '_Data.txt','w')
     f.write('Time\tax\tay\taz\tgx\tgy\tgz\n')
     for i in range(len(ax)):
         f.write('%s\t%s\t%s\t%s\t%s\t%s\t%s\n' % (t[i],ax[i],ay[i],az[i],gx[i],gy[i],gz[i]))
