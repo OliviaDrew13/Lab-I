@@ -15,20 +15,39 @@ from scipy import signal
 plt.rcParams['axes.autolimit_mode'] = 'round_numbers'
 plt.rcParams["axes.formatter.limits"] = -2, 2
 
-def plotting(x, y, xyLabels, labels, types, labelsOn = True, extents = None, grid = True, title = None):
+def plotting(x, y, xyLabels, labels, types, labelsOn = True, xExtents = None, yExtents = None, grid = True, title = None, sharex = False):
     
     fig, ax = plt.subplots()
-    
-    # looping through the data to be plot and checking plottype
-    for i in range(len(x)):
         
-        if types[i] == 'pl':
+    if np.shape(labels) == ():
+        print("You have not provided enough labels, duplicating...")
+        labelVal = labels
+        labels = []
+        for i in range(len(y)):
+            labels.append(labelVal)
+            
+    if np.shape(types) == ():
+        typeVal = types
+        types = []
+        for i in range(len(y)):
+            types.append(typeVal)
+            
+    if sharex == True:
+        xs=[x]
+        for i in range(len(y)):
+            xs.append(x)
+        x = xs
+            
+    # looping through the data to be plot and checking plottype
+    for i in range(len(y)):
+        
+        if types[i] == 'p':
             ax.plot(x[i], y[i], label = labels[i])
             
-        elif types[i] == 'sc':
+        elif types[i] == 's':
             ax.scatter(x[i], y[i], s=5, label = labels[i])
             
-        elif types[i] == 'vl':
+        elif types[i] == 'l':
             ax.vlines(x[i], 0, 1, color='grey', zorder=0, linestyle = '-.', lw=0.5, label = labels[i])
     
     # Checking whether to plot a grid
@@ -44,14 +63,47 @@ def plotting(x, y, xyLabels, labels, types, labelsOn = True, extents = None, gri
     ax.set_title(title)
     
     # Setting the plotting extents if they are specified
-    if extents != None:
-        ax.set_xlim(extents[0], extents[1])
-        ax.set_ylim(extents[2], extents[3])
+    if xExtents != None:
+        ax.set_xlim(xExtents[0], xExtents[1])
+    if yExtents != None:
+        ax.set_ylim(yExtents[0], yExtents[1])
     
     # Applying legend if true
     if labelsOn == True:
         ax.legend()
     
+def subplotting(x, y, xylabels, labels=None, xExtents=None, yExtents=None, labelsOn=True, grid = True, figsize = (6,5), title=None):
+    
+    fig, axs = plt.subplots(len(x), figsize = figsize)
+    for i in range(len(x)):
+        lines = []
+        for n in range(len(x[i])):
+            
+            line, = axs[i].plot(x[i][n], y[i][n])
+            lines.append(line)
+        
+        axs[i].set_xlabel(xylabels[0])
+        axs[i].set_ylabel(xylabels[1][i])
+        
+        if grid == True:
+            axs[i].grid(which='major', color='k', linestyle='-', linewidth=0.6, alpha = 0.6)
+            axs[i].grid(which='minor', color='k', linestyle='--', linewidth=0.4, alpha = 0.4)
+            axs[i].minorticks_on()
+        
+        # Setting the plotting extents if they are specified
+        if xExtents != None:
+            axs[i].set_xlim(xExtents[i][0], xExtents[i][1])
+        if yExtents != None:
+            axs[i].set_ylim(yExtents[i][0], yExtents[i][1])
+        
+        # Applying legend if true
+        if labelsOn == True:
+            axs[i].legend(lines, labels[i])
+            print(labels[i])
+        
+        axs[0].set_title(title)
+        fig.tight_layout()    
+
 def rotation(time, aX, aY, aZ, gX, gY, gZ):
     
     #flipping signs
@@ -99,7 +151,7 @@ def rotation(time, aX, aY, aZ, gX, gY, gZ):
     
     # plotting([time.iloc[1:],time.iloc[1:],time.iloc[1:]], [rAX,rAY,rAZ], ["Time (s)", "Acceleration (m/s$^2$)"], ['$a_y$','$a_y$','$a_z$'], ["pl", "pl", "pl"])
     
-    return(time.iloc[1:],rAX,rAY,rAZ)
+    return(time[1:],rAX,rAY,rAZ)
 
 def integrationTrapezoid(time,X,Y,Z,dt):
     # Integrating the input data
@@ -203,7 +255,7 @@ for file in filePaths:
     dataF = pd.read_csv(file, sep='\\s+')
     
     # Reading raw data
-    t, ax, ay, az, gx, gy, gz = dataF["Time"], dataF["ax"], dataF["ay"], dataF["az"], dataF["gx"], dataF["gy"], dataF["gz"]
+    t, ax, ay, az, gx, gy, gz = np.array(dataF["Time"]), dataF["ax"], dataF["ay"], dataF["az"], dataF["gx"], dataF["gy"], dataF["gz"]
     
     dt = 0.001
     
@@ -248,28 +300,30 @@ for file in filePaths:
 #     rposTime, rX,rY,rZ = euler(rvTime, rVX, rVY, rVZ, dt)
 # =============================================================================
     
-    # Plotting the data
-    # 2D rotated vs Unrotated Positions
-    plotting([x, rX], [y, rY], ["x (m)", "y (m)"], ["Unrotated", "Rotated"], ["pl", "pl"], title = "2D Rotated vs Unrotated Position")
-    # Rotated Positions vs time
-    plotting([rposTime, rposTime, rposTime], [rX, rY, rZ], ["Time (s)", "Position (m)"], ["$x_R$", "$y_R$", "$z_R$"], ["pl", "pl", "pl"], title = "Rotated Position Data")
-    # Rotated accelerations vs time
-    # plotting([raTime, raTime, raTime], [rAX, rAY, rAZ], ["Time (s)", "Acceleration (m/s^2)"], ["$A_Rx$", "$A_Ry$", "$A_Rz$"], ["pl", "pl", "pl"], title = "Rotated Acceleration Data")
-    # Rotated accelerations vs time
-    # plotting([t, t, t], [ax, ay, az], ["Time (s)", "Acceleration (m/s^2)"], ["$A_x$", "$A_y$", "$A_z$"], ["pl", "pl", "pl"], title = "Raw Acceleration Data")
-    # Rotated vs unrotated y acceleration
-    # plotting([t, t[1:]], [fAY, rAY], ["Time (s)", "Acceleration (m/s$^2$)"], ["Unrotated", "Rotated"], ["pl", "pl"], title = "2D Rotated vs Unrotated Acceleration in y")
-    # Filtered vs unfiltered y acceleration
-    # plotting([t,t], [ax, fAX], ["time", "acceleration"], ["unfiltered", "filtered"], ["pl", "pl"], title = "x")
-    # extents = [None, None, -0.5, 0.5]
-    # extents = None
-    # plotting([t,t], [ay, fAY], ["time", "acceleration"], ["unfiltered", "filtered"], ["pl", "pl"], title = "y", extents = extents)
-    # plotting([t, t], [az, fAZ], ["time", "acceleration"], ["unfiltered", "filtered"], ["pl", "pl"], title = "z")
+    # Index      = [0     , 1  , 2  , 3  , 4     , 5  , 6  , 7  , 8       , 9 , 10, 11]
+    rotatedData  = [raTime, rAX, rAY, rAZ, rvTime, rVX, rVY, rVZ, rposTime, rX, rY, rZ]
+    filteredData = [t     , fAX, fAY, fAZ, vTime , vx , vy , vz , posTime , x , y , z ]
     
-    fig, axs = plt.subplots(3, figsize=(8,8))
-    axs[0].plot(raTime, rAX)
-    axs[1].plot(rvTime, rVX)
-    axs[2].plot(rposTime, rX)
+    # Plotting the data
+    
+    # 2D rotated vs unrotated positions
+    plotting([x, rX], [y, rY], ["x (m)", "y(m)"], ["Raw", "Rotated"], "p")
+    
+    # Rotated positions vs time
+    plotting(rposTime, rotatedData[9:12], ["Time (s)", "Position (m)"], ["$x_R$", "$y_R$", "$z_R$"], "p", sharex = True, title = "Rotated Positions")
+    
+    # Rotated Accelerations
+    plotting(raTime, rotatedData[1:4], ["Time (s)", "Acceleration (m/s$^2$)"], ["$A_Rx$", "$A_Ry$", "$A_Rz$"], "p", title= "Rotated Accelerations", sharex = True)
+    
+    # Filter Demonstrations
+    plotting(t, [ax, fAX], ["time", "acceleration"], ["unfiltered", "filtered"], "p", title = "Filter Demonstration x", sharex = True)
+    plotting(t, [ay, fAY], ["time", "acceleration"], ["unfiltered", "filtered"], "p", title = "Filter Demonstration y", sharex = True)
+    plotting(t, [az, fAZ], ["time", "acceleration"], ["unfiltered", "filtered"], "p", title = "Filter Demonstration z", sharex = True)
+    
+    # Plotting the consecutive integrations
+    subplotting([[raTime], [rvTime], [rposTime]], [[rAX], [rVX], [rX]], ["Time (s)", ["Acceleration (m/s$^2$)", "Velocity (m/s)", "Displacement (m)"]], labelsOn = False, title = "Integration in $x$")
+    subplotting([[raTime], [rvTime], [rposTime]], [[rAY], [rVY], [rY]], ["Time (s)", ["Acceleration (m/s$^2$)", "Velocity (m/s)", "Displacement (m)"]], labelsOn = False, title = "Integration in $y$")
+    subplotting([[raTime], [rvTime], [rposTime]], [[rAZ], [rVZ], [rZ]], ["Time (s)", ["Acceleration (m/s$^2$)", "Velocity (m/s)", "Displacement (m)"]], labelsOn = False, title = "Integration in $z$")
     
     # Plotting the path in 3d
     # plotting3D(rX, rY, rZ, ["$x_R$", "$y_R$", "$z_R$"])
