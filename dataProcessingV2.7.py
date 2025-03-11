@@ -79,7 +79,7 @@ def plotting(x, y, xyLabels, labels, types, labelsOn = True, xExtents = None, yE
     
     plt.show()
     
-def subplotting(x, y, xylabels, labels=None, xExtents=None, yExtents=None, labelsOn=True, grid = True, figsize = (6,5), title=None):
+def subplotting(x, y, xylabels, labels=None, xExtents=None, yExtents=None, labelsOn=True, grid = True, figsize = (6,8), title=None):
     
     fig, axs = plt.subplots(len(x), figsize = figsize)
     for i in range(len(x)):
@@ -110,7 +110,7 @@ def subplotting(x, y, xylabels, labels=None, xExtents=None, yExtents=None, label
             axs[i].legend(lines, labels[i])
             print(labels[i])
     
-    axs[0].set_title(" \n ")
+    axs[0].set_title(title)
     
     fig.tight_layout()    
 
@@ -245,9 +245,10 @@ def dataCalibration(time, ax, ay, az, gx, gy, gz):
         
     return np.array(corrections)
     
-#filePaths = ["DataDay1/rotX1_25_02_2025_Data.txt"]
+# filePaths = ["DataDay2/stationaryZ7_04_03_2025_Data.txt"]
 #filePaths = ["DataDay2SRFix/positiveY1_04_03_2025_Data.txt"]
 filePaths = ["DataDay2SRFix/LshapeXY1_04_03_2025_Data.txt"]
+# filePaths = ["DataDay2SRFix/rectangleSign1_04_03_2025_Data.txt"]
 # filePaths = ["DataDay2SRFix/positiveX1_04_03_2025_Data.txt", "DataDay2SRFix/negativeX1_04_03_2025_Data.txt", "DataDay2SRFix/positiveY1_04_03_2025_Data.txt", "DataDay2SRFix/negativeY1_04_03_2025_Data.txt", "DataDay2SRFix/positiveZ1_04_03_2025_Data.txt", "DataDay2SRFix/negativeZ1_04_03_2025_Data.txt"]
 
 # Day2
@@ -278,7 +279,6 @@ for file in filePaths:
     # Reassigning the acceleration and angular velocity arrays
     cAX, cAY, cAZ, cGX, cGY, cGZ = dataArrays
     
-    
     # Filtering the data with Butterworth
     #freq = [60]
     freq = [8]
@@ -290,11 +290,21 @@ for file in filePaths:
     fGX, fGY, fGZ = butterFilter(t, cGX, cGY, cGZ, freq, ty)
     
 # =============================================================================
-#     # Filtering the data with Savitzky-Golay
-#     fAX, fAY, fAZ = savgolFiltering(fAX, fAY, fAZ)
-#     fGX, fGY, fGZ = savgolFiltering(fGX, fGY, fGZ)
+#     # # Filtering the data with Savitzky-Golay
+#     fAX, fAY, fAZ = savgolFiltering(cAX, cAY, cAZ)
+#     fGX, fGY, fGZ = savgolFiltering(cGX, cGY, cGZ)
 # =============================================================================
     
+    corrections = dataCalibration(t, fAX, fAY, fAZ, fGX, fGY, fGZ)
+    dataArrays = [fAX, fAY, fAZ, fGX, fGY, fGZ]
+    
+    # Applying measured correciton factors
+    for i in range(len(dataArrays)):
+        dataArrays[i], lowerMeans[i], upperMeans[i] = correcting(dataArrays[i], corrections[i][0], corrections[i][1])
+    
+    # Reassigning the acceleration and angular velocity arrays
+    fAX, fAY, fAZ, fGX, fGY, fGZ = dataArrays
+
     # Integrating the filtered acceleration data
     vTime, vx, vy, vz = integrationTrapezoid(t, fAX, fAY, fAZ, dt)
     posTime, x,y,z = integrationTrapezoid(vTime, vx, vy, vz, dt)
@@ -322,29 +332,29 @@ for file in filePaths:
     plotting([x, rX], [y, rY], ["x (m)", "y(m)"], ["Raw", "Rotated"], "p", aspect = 1)
     # print(rY.max())
     # Rotated positions vs time
-    plotting(rposTime, rotatedData[9:12], ["Time (s)", "Position (m)"], ["$x_R$", "$y_R$", "$z_R$"], "p", sharex = True, title = "Rotated Positions")
-    plotting(t, [gx, gy, gz], ["Time (s)", "Angular Velocity (m)"], ["$x$", "$y$", "$z$"], "p", sharex = True, title = "Rotated Positions")
-    plotting(t, [rX, rY, rZ], ["Time (s)", "Position"], ["$x$", "$y$", "$z$"], "p", sharex = True, title = "Rotated Positions")
+    # plotting(rposTime, rotatedData[9:12], ["Time (s)", "Position (m)"], ["$x_R$", "$y_R$", "$z_R$"], "p", sharex = True, title = "Rotated Positions")
+    # plotting(t, [gx, gy, gz], ["Time (s)", "Angular Velocity (m)"], ["$x$", "$y$", "$z$"], "p", sharex = True, title = "Rotated Positions")
+    # plotting(t, [rX, rY, rZ], ["Time (s)", "Position"], ["$x$", "$y$", "$z$"], "p", sharex = True, title = "Rotated Positions")
     # Rotated Accelerations
-    plotting(raTime, rotatedData[1:4], ["Time (s)", "Acceleration (m/s$^2$)"], ["$A_Rx$", "$A_Ry$", "$A_Rz$"], "p", title= "Rotated Accelerations", sharex = True)
+    # plotting(raTime, rotatedData[1:4], ["Time (s)", "Acceleration (m/s$^2$)"], ["$A_Rx$", "$A_Ry$", "$A_Rz$"], "p", title= "Rotated Accelerations", sharex = True)
     
     # Filter Demonstrations
-    plotting(t, [ax, fAX], ["Time (s)", "Acceleration (m/s$^2$)"], ["Filtered", "Rotated"], "p", title = "Filter Demonstration x", sharex = True)
+    # plotting(t, [ax, fAX], ["Time (s)", "Acceleration (m/s$^2$)"], ["Filtered", "Rotated"], "p", title = "Filter Demonstration x", sharex = True)
     plotting(t, [ay, fAY], ["Time (s)", "Acceleration (m/s$^2$)"], ["unfiltered", "filtered"], "p", title = "Filter Demonstration y", sharex = True)
-    plotting(t, [az, fAZ], ["Time (s)", "Acceleration (m/s$^2$)"], ["unfiltered", "filtered"], "p", title = "Filter Demonstration z", sharex = True)
+    # plotting(t, [az, fAZ], ["Time (s)", "Acceleration (m/s$^2$)"], ["unfiltered", "filtered"], "p", title = "Filter Demonstration z", sharex = True)
 
     
     # Plotting the consecutive integrations
-    subplotting([[raTime], [rvTime], [rposTime]], [[rAX], [rVX], [rX]], ["Time (s)", ["Acceleration (m/s$^2$)", "Velocity (m/s)", "Displacement (m)"]], labelsOn = False, title = "")
+    subplotting([[raTime], [rvTime], [rposTime]], [[rAX], [rVX], [rX]], ["Time (s)", ["Acceleration (m/s$^2$)", "Velocity (m/s)", "Displacement (m)"]], labelsOn = False, title = "Integration in $x$")
     subplotting([[raTime], [rvTime], [rposTime]], [[rAY], [rVY], [rY]], ["Time (s)", ["Acceleration (m/s$^2$)", "Velocity (m/s)", "Displacement (m)"]], labelsOn = False, title = "Integration in $y$")
-    subplotting([[raTime], [rvTime], [rposTime]], [[rAZ], [rVZ], [rZ]], ["Time (s)", ["Acceleration (m/s$^2$)", "Velocity (m/s)", "Displacement (m)"]], labelsOn = False, title = "Integration in $z$")
+    # subplotting([[raTime], [rvTime], [rposTime]], [[rAZ], [rVZ], [rZ]], ["Time (s)", ["Acceleration (m/s$^2$)", "Velocity (m/s)", "Displacement (m)"]], labelsOn = False, title = "Integration in $z$")
     
     plotting(t[:1000], [ax[:1000], fAX[:1000]], ["Time (s)", "Acceleration (m/s$^2$)"], ["Filtered", "Rotated"], "p", title = "Filter Demonstration x", sharex = True)
     
     # Plotting the path in 3d
     # plotting3D(rX, rY, rZ, ["$x_R$", "$y_R$", "$z_R$"])
     
-    plotting(t, [ax, cAX], ["Time (s)", "Acceleration (m/s$^2$)"], ["Raw Data", "Corrected Data"], "p", sharex = True)
-    subplotting([[t], [t]], [[fAY], [rAY]], ["Time (s)", ["Acceleration (m/s$^2$)", "Acceleration (m/s$^2$)"]], [["Filtered"], ["Rotated"]])
+    # plotting(t, [ax, cAX], ["Time (s)", "Acceleration (m/s$^2$)"], ["Raw Data", "Corrected Data"], "p", sharex = True)
+    # subplotting([[t], [t]], [[fAY], [rAY]], ["Time (s)", ["Acceleration (m/s$^2$)", "Acceleration (m/s$^2$)"]], [["Filtered"], ["Rotated"]])
     
     print(f"The max acceleration is: {fAZ.max()}\nThe max angular velocity is: {fGZ.max()}")

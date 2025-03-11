@@ -187,13 +187,14 @@ ax = fx(time)
 ay=fy(time)
 az = np.zeros(len(time))
 noise = np.random.normal(-0.1*ax.max(),0.1*ax.max(), 1500)
+noise2 = np.random.normal(-0.3*ax.max(),0.3*ax.max(), 1500)
 
 nax = ax + noise
 nay = ay + noise
+nax = nax + noise2
+nay = nay + noise2
 
-
-nax, nay, naz = butterFilter(time, nax, nay, az, [10], "lowpass")
-nax, nay, naz = savgolFiltering(nax, nay, az)
+nax, nay, naz = butterFilter(time, nax, nay, az, [15], "lowpass")
 print(np.mean(nax), np.mean(ax))
 # nax, nay, naz = butterFilter(time, nax, nay, az, [5], "lowpass")
 # nax, nay, naz = savgolFiltering(nax, nay, az)
