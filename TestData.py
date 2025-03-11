@@ -8,6 +8,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import scipy as sc
 from scipy import signal
+from scipy.signal import savgol_filter
 plt.rcParams['axes.autolimit_mode'] = 'round_numbers'
 plt.rcParams["axes.formatter.limits"] = -2, 2
 
@@ -147,20 +148,66 @@ def subplotting(x, y, xylabels, labels=None, xExtents=None, yExtents=None, label
     
     fig.tight_layout()    
 
+def savgolFiltering(ax,ay,az):
+    
+    #filter paramters: window is number of coefficients, order is the polynomial order
+    window = 80
+    Order = 9
+
+    #apply filter
+    fAX = savgol_filter(ax, window_length = int(window), polyorder = int(Order), mode = 'interp')
+    fAY = savgol_filter(ay, window_length = int(window), polyorder = int(Order), mode = 'interp')
+    fAZ = savgol_filter(az, window_length = int(window), polyorder = int(Order), mode = 'interp')
+
+    return(fAX,fAY,fAZ)
+
+def correcting(data, mean, std):
+    dataCorrected = data - mean
+    dataLM = data - (mean - std)
+    dataUM = data - (mean + std)
+    return dataCorrected, dataLM, dataUM
+
+def dataCalibration(time, ax, ay, az):
+    
+    calibIndices = (time<=2)
+    
+    variables = [ax[calibIndices], ay[calibIndices], az[calibIndices]]
+    corrections = []
+    
+    for variable in variables:
+        
+        mean = variable.mean()
+        std = variable.std()
+        corrections.append([mean, std])
+        
+    return np.array(corrections)
 
 time = np.linspace(0, 6, 1500)
 ax = fx(time)
 ay=fy(time)
 az = np.zeros(len(time))
-noise = np.random.normal(-0.05*ax.max(),0.05*ax.max(), 1500)
+noise = np.random.normal(-0.1*ax.max(),0.1*ax.max(), 1500)
 
 nax = ax + noise
 nay = ay + noise
 
 
-nax, nay, naz = butterFilter(time, nax, nay, az, [5], "lowpass")
+nax, nay, naz = butterFilter(time, nax, nay, az, [10], "lowpass")
+nax, nay, naz = savgolFiltering(nax, nay, az)
+print(np.mean(nax), np.mean(ax))
+# nax, nay, naz = butterFilter(time, nax, nay, az, [5], "lowpass")
+# nax, nay, naz = savgolFiltering(nax, nay, az)
 print("1")
 
+corrections = dataCalibration (time, nax, nay, naz)
+dataArrays = [nax, nay, naz]
+upperMeans = [[], [], [], [], [], []]
+lowerMeans = [[], [], [], [], [], []]
+
+for i in range(len(dataArrays)):
+    dataArrays[i], lowerMeans[i], upperMeans[i] = correcting(dataArrays[i], corrections[i][0], corrections[i][1])
+
+nax, nay, naz = dataArrays
 t, vx, vy, vz = integrationTrapezoid(time, ax, ay, az)
 t, x, y, z = integrationTrapezoid(time, vx, vy, vz)
 t, nvx, nvy, nvz = integrationTrapezoid(time, nax, nay, naz)
@@ -168,6 +215,7 @@ t, nx, ny, nz = integrationTrapezoid(time, nvx, nvy, nvz)
 
 plotting(time, [ax,ay], ["t", "d"], [None, None], "p", labelsOn = False, sharex = True)
 plotting([x],[y], ["x","y"], [None], "p", labelsOn=False)
+plotting([nx],[ny], ["x","y"], [None], "p", labelsOn=False)
 subplotting([[t], [t], [t]], [[ax], [vx], [x]], ["time", ["a", "v", "p"]], labelsOn = False)
 subplotting([[t], [t], [t]], [[nax], [nvx], [nx]], ["time", ["a", "v", "p"]], labelsOn = False)
 
