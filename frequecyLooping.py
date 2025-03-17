@@ -20,7 +20,7 @@ plt.rcParams['axes.autolimit_mode'] = 'round_numbers'
 plt.rcParams["axes.formatter.limits"] = -2, 2
 
 def plotting(x, y, xyLabels, types, labels=None, xExtents = None, yExtents = None, grid = True, 
-             title = None, sharex = False, thickness = 1, yScale="linear", line = "-",
+             title = None, sharex = False, thickness = 1, yScale="linear", 
              xScale = "linear", invertY = False, yTicks = None, aspect = "auto"):
     
     """
@@ -94,7 +94,7 @@ def plotting(x, y, xyLabels, types, labels=None, xExtents = None, yExtents = Non
         
         # Plotting as a line plot
         if types[i] == 'p':
-            ax.plot(x[i], y[i], label = labels[i], lw=thickness, ls=line[i], color="k")
+            ax.plot(x[i], y[i], label = labels[i], lw=thickness)
         
         # Plotting as a scatter plot
         elif types[i] == 's':
@@ -143,7 +143,7 @@ def plotting(x, y, xyLabels, types, labels=None, xExtents = None, yExtents = Non
     plt.show()
 
 def subplotting(x, y, xylabels, labels=None, xExtents=None, yExtents=None, grid = True, 
-                figsize = (7,5), title=None):
+                figsize = (6,9), title=None):
     
     # Creating the figure and axes objects
     fig, axs = plt.subplots(len(x), figsize = figsize, sharex=True)
@@ -158,7 +158,7 @@ def subplotting(x, y, xylabels, labels=None, xExtents=None, yExtents=None, grid 
             # Plotting the data and saving it as a line for the legend
             line, = axs[i].plot(x[i][n], y[i][n], color="k")
             lines.append(line)
-        
+            
         # Setting the y label of the subplot
         axs[i].set_ylabel(xylabels[1][i])
         
@@ -176,7 +176,8 @@ def subplotting(x, y, xylabels, labels=None, xExtents=None, yExtents=None, grid 
         
         # Applying legend if true
         if labels != None:
-            axs[i].legend(lines, labels)
+            print(lines,labels[i])
+            axs[i].legend([line], [labels[i]], loc=2)
     
     # applying a title and the x axis label
     axs[0].set_title(title)
@@ -318,68 +319,85 @@ for file in filePaths:
 #     Filtering the data with Butterworth
 # =============================================================================
 
-    # Butterworth
-    freq = [10]
-    ty = "lowpass"
-    #ty = "highpass"
-    #ty = "bandpass"
-    fAX, fAY, fAZ = butterFilter(t, cAX, cAY, cAZ, freq, ty)
-    fGX, fGY, fGZ = butterFilter(t, cGX, cGY, cGZ, freq, ty)
-# =============================================================================
-#     # Savitzky-Golay
-#     fAX, fAY, fAZ = savgolFilter(cAX, cAY, cAZ)
-#     fGX, fGY, fGZ = savgolFilter(cGX, cGY, cGZ)
-# =============================================================================
-     
-    # Putting the Filtered Data Into a Dataframe
-    filteredDataF = pd.DataFrame(np.array((t, fAX, fAY, fAZ, fGX, fGY, fGZ)).T, columns = dataF.columns)
+    freqs = [2,5,10,15,20]
+    freqPlots = [[cAX]]
     
-    # Calibrating the Filtered Data
-    dataF, LUM = dataCalibration(filteredDataF, 2)
-    t, fAX, fAY, fAZ, fGX, fGY, fGZ = np.array(dataF["Time"]), dataF["ax"], dataF["ay"], dataF["az"], dataF["gx"], dataF["gy"], dataF["gz"]
-
-# =============================================================================
-#     Integrating the Data to Achieve Position and Velocity
-# =============================================================================
-
-    # Integrating the filtered acceleration data for exemplar data (raw velocity and position)
-    t, vx, vy, vz = integrationTrapezoid(t, fAX, fAY, fAZ)
-    t, x, y, z = integrationTrapezoid(t, vx, vy, vz)
+    for freq in freqs:
+        
+        # Butterworth
+        
+        ty = "lowpass"
+        #ty = "highpass"
+        #ty = "bandpass"
+        fAX, fAY, fAZ = butterFilter(t, cAX, cAY, cAZ, freq, ty)
+        fGX, fGY, fGZ = butterFilter(t, cGX, cGY, cGZ, freq, ty)
+        freqPlots.append([fAX])
+    # =============================================================================
+    #     # Savitzky-Golay
+    #     fAX, fAY, fAZ = savgolFilter(cAX, cAY, cAZ)
+    #     fGX, fGY, fGZ = savgolFilter(cGX, cGY, cGZ)
+    # =============================================================================
+         
+        # Putting the Filtered Data Into a Dataframe
+        filteredDataF = pd.DataFrame(np.array((t, fAX, fAY, fAZ, fGX, fGY, fGZ)).T, columns = dataF.columns)
+        
+        # Calibrating the Filtered Data
+        dataF, LUM = dataCalibration(filteredDataF, 2)
+        t, fAX, fAY, fAZ, fGX, fGY, fGZ = np.array(dataF["Time"]), dataF["ax"], dataF["ay"], dataF["az"], dataF["gx"], dataF["gy"], dataF["gz"]
     
-    # Rotating the data to the lab reference frame
-    t, rAX, rAY, rAZ = rotation(t, fAX, fAY, fAZ, fGZ, fGY, fGZ)
+    # =============================================================================
+    #     Integrating the Data to Achieve Position and Velocity
+    # =============================================================================
     
-    # Integrating using cumulative trapezoid
-    # t, rVX, rVY, rVZ = integrationTrapezoid(t, rAX, rAY, rAZ)
-    # t, rX,rY,rZ = integrationTrapezoid(t, rVX, rVY, rVZ)
+        # Integrating the filtered acceleration data for exemplar data (raw velocity and position)
+        t, vx, vy, vz = integrationTrapezoid(t, fAX, fAY, fAZ)
+        t, x,y,z = integrationTrapezoid(t, vx, vy, vz)
+        
+        # Rotating the data to the lab reference frame
+        t, rAX, rAY, rAZ = rotation(t, fAX, fAY, fAZ, fGZ, fGY, fGZ)
+        
+        # Integrating using cumulative trapezoid
+        t, rVX, rVY, rVZ = integrationTrapezoid(t, rAX, rAY, rAZ)
+        t, rX,rY,rZ = integrationTrapezoid(t, rVX, rVY, rVZ)
+         
+    # =============================================================================
+    #     Plotting
+    # =============================================================================
+        
+        # Index      = [0     , 1  , 2  , 3  , 4  , 5  , 6  , 7 , 8 , 9 ]
+        
+        rawData      = [t     , ax , ay , az , gx , gy , gz             ]
+        calibData    = [t     , cAX, cAY, cAZ, cGX, cGY, cGZ            ]
+        filteredData = [t     , fAX, fAY, fAZ, vx , vy , vz , x , y , z ]
+        rotatedData  = [t     , rAX, rAY, rAZ, rVX, rVY, rVZ, rX, rY, rZ]
+        axes         = ["Time (s)", "Acceleration (m/s$^2$)", "Velocity (m/s)", "Displacement (m)"]
+        
+        # Plotting the Path in 2D
+        # plotting([x, rX], [y, rY], ["x (m)", "y (m)"], "p", ["Raw data", "Rotated"], aspect = "equal", title = "The Calculated Path of the Device")
+        
+        # Plotting the Acceleration as a Function of Time to Demonstrate Filtering
+        plotting(t, [cAX, fAX], axes[0:2], "p", sharex=True, labels = ["Raw Data", "Filtered"], title = "x Filtered")
+        # plotting(t, [cAY, fAY], axes[0:2], "p", sharex=True, labels = ["Raw Data", "Filtered"], title = "y Filtered")
+        # plotting(t, [cAZ, fAZ], axes[0:2], "p", sharex=True, labels = ["Raw Data", "Filtered"], title = "z Filtered")
+        
+        # Plotting the Integration Steps as Subplots
+        # subplotting([[t],[t],[t]], [[rAX], [rVX], [rX]], [axes[0], axes[1:4]], title="x Integration Steps")
+        # subplotting([[t],[t],[t]], [[rAY], [rVY], [rY]], [axes[0], axes[1:4]], title="y Integration Steps")
+        # subplotting([[t],[t],[t]], [[rAZ], [rVZ], [rZ]], [axes[0], axes[1:4]], title="z Integration Steps")
     
-    t, rVX, rVY, rVZ = euler(t, rAX, rAY, rAZ, 0.01)
-    t, rX, rY, rZ = euler(t, rVX, rVY, rVZ, 0.01)
-     
-# =============================================================================
-#     Plotting
-# =============================================================================
-    
-    # Index      = [0     , 1  , 2  , 3  , 4  , 5  , 6  , 7 , 8 , 9 ]
-    
-    rawData      = [t     , ax , ay , az , gx , gy , gz             ]
-    calibData    = [t     , cAX, cAY, cAZ, cGX, cGY, cGZ            ]
-    filteredData = [t     , fAX, fAY, fAZ, vx , vy , vz , x , y , z ]
-    rotatedData  = [t     , rAX, rAY, rAZ, rVX, rVY, rVZ, rX, rY, rZ]
-    axes         = ["Time (s)", "Acceleration (m/s$^2$)", "Velocity (m/s)", "Displacement (m)"]
-    
-    # Plotting the Path in 2D
-    # plotting([x, rX], [y, rY], ["x (m)", "y (m)"], "p", ["Non-Rotated", "Rotated"], aspect = "equal", line=["-","--"])
-    
-    # Plotting the Acceleration as a Function of Time to Demonstrate Filtering
-    # plotting(t, [cAX, fAX], axes[0:2], "p", sharex=True, labels = ["Raw Data", "Filtered"], title = "x Filtered")
-    # plotting(t, [cAY, fAY], axes[0:2], "p", sharex=True, labels = ["Raw Data", "Filtered"], title = "y Filtered")
-    # plotting(t, [cAZ, fAZ], axes[0:2], "p", sharex=True, labels = ["Raw Data", "Filtered"], title = "z Filtered")
-    
-    # Plotting the Integration Steps as Subplots
-    subplotting([[t],[t],[t]], [[rAX], [rVX], [rX]], [axes[0], axes[1:4]])
-    # subplotting([[t],[t],[t]], [[rAY], [rVY], [rY]], [axes[0], axes[1:4]], title="y Integration Steps")
-    # subplotting([[t],[t],[t]], [[rAZ], [rVZ], [rZ]], [axes[0], axes[1:4]], title="z Integration Steps")
-
-    # plotting(t, rotatedData[7:10], axes[0:2], "p", sharex=True, labels=["$x_R$", "$y_R$", "$z_R$"])
-    
+        # plotting(t, rotatedData[7:10], axes[0:2], "p", sharex=True, labels=["$x_R$", "$y_R$", "$z_R$"])
+    ts = [[t]]
+    As = ["Acceleration\n(m/s$^2$)"]
+    xext = [[0,7]]
+    yext = [[-21,21]]
+    labels=["Data"]
+    for i in range(len(freqs)):
+        ts.append([t])
+        As.append(As[0])
+        # freqs[i] = [freqs[i], "Data"]
+        xext.append(xext[0])
+        yext.append(yext[0])
+        labels.append(f"f={freqs[i]}")
+    print(freqPlots[0])
+    subplotting(ts, freqPlots, [axes[0], As], labels = labels, xExtents=xext, yExtents=yext)
+        

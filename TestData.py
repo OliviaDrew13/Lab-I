@@ -12,6 +12,8 @@ from scipy.signal import savgol_filter
 plt.rcParams['axes.autolimit_mode'] = 'round_numbers'
 plt.rcParams["axes.formatter.limits"] = -2, 2
 
+np.random.seed(0)
+
 def plotting(x, y, xyLabels, labels, types, labelsOn = True, xExtents = None, yExtents = None, grid = True, title = None, sharex = False):
     
     fig, ax = plt.subplots()
@@ -39,7 +41,7 @@ def plotting(x, y, xyLabels, labels, types, labelsOn = True, xExtents = None, yE
     for i in range(len(y)):
         
         if types[i] == 'p':
-            ax.plot(x[i], y[i], label = labels[i])
+            ax.plot(x[i], y[i], label = labels[i], color="k")
             
         elif types[i] == 's':
             ax.scatter(x[i], y[i], s=5, label = labels[i])
@@ -120,7 +122,7 @@ def subplotting(x, y, xylabels, labels=None, xExtents=None, yExtents=None, label
         lines = []
         for n in range(len(x[i])):
             
-            line, = axs[i].plot(x[i][n], y[i][n])
+            line, = axs[i].plot(x[i][n], y[i][n], color="k")
             lines.append(line)
         
         axs[i].set_xlabel(xylabels[0])
@@ -181,6 +183,7 @@ def dataCalibration(time, ax, ay, az):
         corrections.append([mean, std])
         
     return np.array(corrections)
+axes         = ["Time (s)", "Acceleration (m/s$^2$)", "Velocity (m/s)", "Displacement (m)"]
 
 time = np.linspace(0, 6, 1500)
 ax = fx(time)
@@ -191,10 +194,16 @@ noise2 = np.random.normal(-0.3*ax.max(),0.3*ax.max(), 1500)
 
 nax = ax + noise
 nay = ay + noise
-nax = nax + noise2
-nay = nay + noise2
+nax2 = nax + noise2
+nay2 = nay + noise2
+naz2 = az
+t, nvx2, nvy2, nvz2 = integrationTrapezoid(time, nax2, nay2, naz2)
+t, nx2, ny2, nz2 = integrationTrapezoid(time, nvx2, nvy2, nvz2)
+plotting([nx2],[ny2], ["x Position (m)","y Position (m)"], [None], "p", labelsOn=False)
+subplotting([[t], [t], [t]], [[nax2], [nvx2], [nx2]], ["Time (s)", axes[1:4]], labelsOn = False)
 
 nax, nay, naz = butterFilter(time, nax, nay, az, [15], "lowpass")
+nax2, nay2, naz2 = butterFilter(time, nax2, nay2, az, [15], "lowpass")
 print(np.mean(nax), np.mean(ax))
 # nax, nay, naz = butterFilter(time, nax, nay, az, [5], "lowpass")
 # nax, nay, naz = savgolFiltering(nax, nay, az)
@@ -209,16 +218,33 @@ for i in range(len(dataArrays)):
     dataArrays[i], lowerMeans[i], upperMeans[i] = correcting(dataArrays[i], corrections[i][0], corrections[i][1])
 
 nax, nay, naz = dataArrays
-t, vx, vy, vz = integrationTrapezoid(time, ax, ay, az)
-t, x, y, z = integrationTrapezoid(time, vx, vy, vz)
+
 t, nvx, nvy, nvz = integrationTrapezoid(time, nax, nay, naz)
 t, nx, ny, nz = integrationTrapezoid(time, nvx, nvy, nvz)
 
-plotting(time, [ax,ay], ["t", "d"], [None, None], "p", labelsOn = False, sharex = True)
-plotting([x],[y], ["x","y"], [None], "p", labelsOn=False)
-plotting([nx],[ny], ["x","y"], [None], "p", labelsOn=False)
-subplotting([[t], [t], [t]], [[ax], [vx], [x]], ["time", ["a", "v", "p"]], labelsOn = False)
-subplotting([[t], [t], [t]], [[nax], [nvx], [nx]], ["time", ["a", "v", "p"]], labelsOn = False)
+corrections = dataCalibration (time, nax2, nay2, naz2)
+dataArrays = [nax2, nay2, naz2]
+upperMeans = [[], [], [], [], [], []]
+lowerMeans = [[], [], [], [], [], []]
+
+for i in range(len(dataArrays)):
+    dataArrays[i], lowerMeans[i], upperMeans[i] = correcting(dataArrays[i], corrections[i][0], corrections[i][1])
+    
+t, vx, vy, vz = integrationTrapezoid(time, ax, ay, az)
+t, x, y, z = integrationTrapezoid(time, vx, vy, vz)
+
+nax2, nay2, naz2 = dataArrays
+t, nvx2, nvy2, nvz2 = integrationTrapezoid(time, nax2, nay2, naz2)
+t, nx2, ny2, nz2 = integrationTrapezoid(time, nvx2, nvy2, nvz2)
+
+
+# plotting(time, [ax,ay], ["t", "d"], [None, None], "p", labelsOn = False, sharex = True)
+plotting([x],[y], ["x Position (m)","y Position (m)"], [None], "p", labelsOn=False)
+plotting([nx],[ny], ["x Position (m)","y Position (m)"], [None], "p", labelsOn=False)
+plotting([nx2],[ny2], ["x Position (m)","y Position (m)"], [None], "p", labelsOn=False)
+subplotting([[t], [t], [t]], [[ax], [vx], [x]], ["Time (s)", axes[1:4]], labelsOn = False)
+subplotting([[t], [t], [t]], [[nax], [nvx], [nx]], ["Time (s)", axes[1:4]], labelsOn = False)
+subplotting([[t], [t], [t]], [[nax2], [nvx2], [nx2]], ["Time (s)", axes[1:4]], labelsOn = False)
 
 
 
