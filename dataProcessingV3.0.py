@@ -204,31 +204,33 @@ def plotting3D(x, y, z, axisLabels):
 def rotation(time, aX, aY, aZ, gX, gY, gZ):
     
     #flipping signs
-    gX, gY, gZ = -gX, -gY, -gZ
+    # gX, gY, gZ = -gX, -gY, -gZ
     
     # finding the respective rotational angles in radians
-    t, rX, rY, rZ = np.deg2rad(integrationTrapezoid(time, gX, gY, gZ))
+    # t, rX, rY, rZ = np.deg2rad(integrationTrapezoid(time, gX, gY, gZ))
+    t, rX, rY, rZ = np.deg2rad(euler(time, gX, gY, gZ, 0.01))
     
     # setting up acceleration vectors
     rAX = []
     rAY = []
     rAZ = []
     
+    # Looping through all of the acceleration values and rotating based on their respective angular velocities
     for i in range(len(aX)):
         accVec = []
         accVec = np.array([aX[i], aY[i], aZ[i]])
+        
+        # Defining the rotation matrix
         rotMatX = np.array([[1, 0, 0], [0, np.cos(rX[i]), -np.sin(rX[i])], [0, np.sin(rX[i]), np.cos(rX[i])]])
         rotMatY = np.array([[np.cos(rY[i]), 0, np.sin(rY[i])], [0, 1, 0], [-np.sin(rY[i]), 0, np.cos(rY[i])]])
         rotMatZ = np.array([[np.cos(rZ[i]), -np.sin(rZ[i]) ,0], [np.sin(rZ[i]), np.cos(rZ[i]), 0], [0, 0, 1]])
         
-        # rotatedZ = np.matmul(rotMatZ, accVec)
-        # rotatedY = np.matmul(rotMatY, rotatedZ)
-        # rotatedX = np.matmul(rotMatX, rotatedY)
-        
+        # Rotating the x, y, and z accelerations
         rotatedX = np.matmul(rotMatX, accVec)
         rotatedY = np.matmul(rotMatY, rotatedX)
         rotatedZ = np.matmul(rotMatZ, rotatedY)
         
+        # appending to the new array
         rAX.append(rotatedZ[0])
         rAY.append(rotatedZ[1])
         rAZ.append(rotatedZ[2])
@@ -237,23 +239,25 @@ def rotation(time, aX, aY, aZ, gX, gY, gZ):
 
 def integrationTrapezoid(time,X,Y,Z):
     
-    # Integrating the input data
+    # Integrating the input x, y and z values
     XI = scI.cumulative_trapezoid(X,time, initial=0)
     YI = scI.cumulative_trapezoid(Y,time, initial=0)
     ZI = scI.cumulative_trapezoid(Z,time, initial=0)
     
     return(time, XI, YI, ZI)
 
-def euler(time, aX, aY, aZ, dt):
+def euler(time, X, Y, Z, dt):
     
-    vx, vy, vz= [0], [0], [0]
+    # Initialising the arrays for the integrated data with a zero to keep the same length
+    XI, YI, ZI= [0], [0], [0]
     
-    for i in range(len(aX)):
-        vx.append(vx[i]+(aX[i] * dt))
-        vy.append(vy[i]+(aY[i] * dt))
-        vz.append(vz[i]+(aZ[i] * dt))
+    # Looping through the input data and integrating using euler's method
+    for i in range(len(X)):
+        XI.append(XI[i]+(X[i] * dt))
+        YI.append(YI[i]+(Y[i] * dt))
+        ZI.append(ZI[i]+(Z[i] * dt))
         
-    return(time, np.array(vx[1:]), np.array(vy[1:]), np.array(vz[1:]))
+    return(time, np.array(vx), np.array(vy), np.array(vz))
 
 # =============================================================================
 # Calibration and Filtering
@@ -270,9 +274,11 @@ def savgolFilter(x, y, z, window=80, Order=9):
 
 def butterFilter(time, x, y, z, freq, fType):
     
+    # Defining the samplerate of the data and the type of filter to use
     rate = len(time)/time.max()
     Pass = signal.butter(5, freq, fType, fs = rate, output = "sos")
     
+    # applying the filter to each axis
     filteredSigx = signal.sosfilt(Pass, x)
     filteredSigy = signal.sosfilt(Pass, y)
     filteredSigz = signal.sosfilt(Pass, z)
@@ -301,7 +307,8 @@ def dataCalibration(dataframe, inTime):
         
     return dataframe, lowerUpperMeans
     
-filePaths = ["DataDay1/xMoveTest2_25_02_2025_Data.txt"]
+filePaths = ["DataDay1/rotZ1_25_02_2025_Data.txt"]
+# filePaths = ["DataDay2SRFix/LshapeXY1_04_03_2025_Data.txt"]
 
 for file in filePaths:
     
@@ -350,11 +357,11 @@ for file in filePaths:
     t, rAX, rAY, rAZ = rotation(t, fAX, fAY, fAZ, fGZ, fGY, fGZ)
     
     # Integrating using cumulative trapezoid
-    # t, rVX, rVY, rVZ = integrationTrapezoid(t, rAX, rAY, rAZ)
-    # t, rX,rY,rZ = integrationTrapezoid(t, rVX, rVY, rVZ)
+    t, rVX, rVY, rVZ = integrationTrapezoid(t, rAX, rAY, rAZ)
+    t, rX,rY,rZ = integrationTrapezoid(t, rVX, rVY, rVZ)
     
-    t, rVX, rVY, rVZ = euler(t, rAX, rAY, rAZ, 0.01)
-    t, rX, rY, rZ = euler(t, rVX, rVY, rVZ, 0.01)
+    # t, rVX, rVY, rVZ = euler(t, rAX, rAY, rAZ, 0.01)
+    # t, rX, rY, rZ = euler(t, rVX, rVY, rVZ, 0.01)
      
 # =============================================================================
 #     Plotting
@@ -369,7 +376,7 @@ for file in filePaths:
     axes         = ["Time (s)", "Acceleration (m/s$^2$)", "Velocity (m/s)", "Displacement (m)"]
     
     # Plotting the Path in 2D
-    # plotting([x, rX], [y, rY], ["x (m)", "y (m)"], "p", ["Non-Rotated", "Rotated"], aspect = "equal", line=["-","--"])
+    plotting([x, rX], [y, rY], ["x (m)", "y (m)"], "p", ["Non-Rotated", "Rotated"], aspect = "equal", line=["-","--"])
     
     # Plotting the Acceleration as a Function of Time to Demonstrate Filtering
     # plotting(t, [cAX, fAX], axes[0:2], "p", sharex=True, labels = ["Raw Data", "Filtered"], title = "x Filtered")
@@ -377,7 +384,7 @@ for file in filePaths:
     # plotting(t, [cAZ, fAZ], axes[0:2], "p", sharex=True, labels = ["Raw Data", "Filtered"], title = "z Filtered")
     
     # Plotting the Integration Steps as Subplots
-    subplotting([[t],[t],[t]], [[rAX], [rVX], [rX]], [axes[0], axes[1:4]])
+    # subplotting([[t],[t],[t]], [[rAX], [rVX], [rX]], [axes[0], axes[1:4]])
     # subplotting([[t],[t],[t]], [[rAY], [rVY], [rY]], [axes[0], axes[1:4]], title="y Integration Steps")
     # subplotting([[t],[t],[t]], [[rAZ], [rVZ], [rZ]], [axes[0], axes[1:4]], title="z Integration Steps")
 
