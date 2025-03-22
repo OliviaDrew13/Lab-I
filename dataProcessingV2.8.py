@@ -301,7 +301,7 @@ def dataCalibration(dataframe, inTime):
         
     return dataframe, lowerUpperMeans
     
-filePaths = ["DataDay1/xMoveTest2_25_02_2025_Data.txt"]
+filePaths = ["DataDay2SRFix/yMoveTest2_04_03_2025_Data.txt"]
 
 for file in filePaths:
     
@@ -350,11 +350,11 @@ for file in filePaths:
     t, rAX, rAY, rAZ = rotation(t, fAX, fAY, fAZ, fGZ, fGY, fGZ)
     
     # Integrating using cumulative trapezoid
-    # t, rVX, rVY, rVZ = integrationTrapezoid(t, rAX, rAY, rAZ)
-    # t, rX,rY,rZ = integrationTrapezoid(t, rVX, rVY, rVZ)
+    t, rVX, rVY, rVZ = integrationTrapezoid(t, rAX, rAY, rAZ)
+    t, rX,rY,rZ = integrationTrapezoid(t, rVX, rVY, rVZ)
     
-    t, rVX, rVY, rVZ = euler(t, rAX, rAY, rAZ, 0.01)
-    t, rX, rY, rZ = euler(t, rVX, rVY, rVZ, 0.01)
+    # t, rVX, rVY, rVZ = euler(t, rAX, rAY, rAZ, 0.01)
+    # t, rX, rY, rZ = euler(t, rVX, rVY, rVZ, 0.01)
      
 # =============================================================================
 #     Plotting
@@ -377,8 +377,8 @@ for file in filePaths:
     # plotting(t, [cAZ, fAZ], axes[0:2], "p", sharex=True, labels = ["Raw Data", "Filtered"], title = "z Filtered")
     
     # Plotting the Integration Steps as Subplots
-    subplotting([[t],[t],[t]], [[rAX], [rVX], [rX]], [axes[0], axes[1:4]])
-    # subplotting([[t],[t],[t]], [[rAY], [rVY], [rY]], [axes[0], axes[1:4]], title="y Integration Steps")
+    # subplotting([[t],[t],[t]], [[rAX], [rVX], [rX]], [axes[0], axes[1:4]])
+    subplotting([[t],[t],[t]], [[rAY], [rVY], [rY]], [axes[0], axes[1:4]])
     # subplotting([[t],[t],[t]], [[rAZ], [rVZ], [rZ]], [axes[0], axes[1:4]], title="z Integration Steps")
 
     # plotting(t, rotatedData[7:10], axes[0:2], "p", sharex=True, labels=["$x_R$", "$y_R$", "$z_R$"])

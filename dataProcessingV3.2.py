@@ -352,12 +352,13 @@ def curtailment(time, x, y, z, height):
 
 # filePaths = ["DataDay1/rotZ1_25_02_2025_Data.txt"]
 # filePaths = ["DataDay2SRFix/LshapeXY1_04_03_2025_Data.txt"]
-# filePaths = ["DataDay4/yMoveTest2_18_03_2025_Data.txt"]
-# filePaths = ["DataDay4/LShapeXYRotTest3_18_03_2025_Data.txt"]
-filePaths = ["DataDay4/LShapeXY2_18_03_2025_Data.txt"]
-# filePaths = ["DataDay4/LShape3DRot1_18_03_2025_Data.txt"]
+filePaths = ["DataDay4/xMoveTest2_18_03_2025_Data.txt"]
+filePaths = ["DataDay4/LShapeXYRotTest3_18_03_2025_Data.txt"]
+# filePaths = ["DataDay4/LShapeXY2_18_03_2025_Data.txt"]
+filePaths = ["DataDay4/LShape3DRot1_18_03_2025_Data.txt"]
 # filePaths = ["DataDay4/shake_18_03_2025_Data.txt"]
-# filePaths = ["DataDay4/squareXYRot1_18_03_2025_Data.txt", "DataDay4/squareXY1_18_03_2025_Data.txt", "DataDay4/LShapeXYRotTest3_18_03_2025_Data.txt"]
+filePaths = ["DataDay4/squareXYRot1_18_03_2025_Data.txt", "DataDay4/squareXY1_18_03_2025_Data.txt", "DataDay4/LShapeXYRotTest3_18_03_2025_Data.txt"]
+filePaths = ["DataDay4/LShapeXYRotTest3_18_03_2025_Data.txt"]
 
 for file in filePaths:
     
@@ -411,11 +412,15 @@ for file in filePaths:
     t, rAX, rAY, rAZ = rotation(t, fAX, fAY, fAZ, fGZ, fGY, fGZ)
     
     # Integrating using cumulative trapezoid
-    t, rVX, rVY, rVZ = integrationTrapezoid(t, rAX, rAY, rAZ)
-    t, rX,rY,rZ = integrationTrapezoid(t, rVX, rVY, rVZ)
+    # t, rVX, rVY, rVZ = integrationTrapezoid(t, rAX, rAY, rAZ)
+    # t, rX,rY,rZ = integrationTrapezoid(t, rVX, rVY, rVZ)
     
-    # t, rVX, rVY, rVZ = euler(t, rAX, rAY, rAZ, 0.01)
-    # t, rX, rY, rZ = euler(t, rVX, rVY, rVZ, 0.01)
+    t, rVX, rVY, rVZ = euler(t, rAX, rAY, rAZ, 0.01)
+    plotting([t], [rAX], ["",""], "p")
+    plotting([t], [rVY], ["",""], "p")
+    t, rX, rY, rZ = euler(t, rVX, rVY, rVZ, 0.01)
+    plotting([t], [rY], ["",""], "p")
+    
      
 # =============================================================================
 #     Plotting
@@ -430,7 +435,7 @@ for file in filePaths:
     axes         = ["Time (s)", "Acceleration (m/s$^2$)", "Velocity (m/s)", "Displacement (m)"]
     
     # Plotting the Path in 2D
-    plotting([x, rX], [y, rY], ["x (m)", "y (m)"], "p", ["Non-Rotated", "Rotated"], aspect = "equal", line=["-","--"])
+    # plotting([x], [y], ["x (m)", "y (m)"], "p", aspect = "equal", line=["-","--"])
     
     # Plotting the Acceleration as a Function of Time to Demonstrate Filtering
     # plotting(t, [cAX, fAX], axes[0:2], "p", sharex=True, labels = ["Raw Data", "Filtered"], title = "x Filtered")
@@ -438,9 +443,9 @@ for file in filePaths:
     # plotting(t, [cAZ, fAZ], axes[0:2], "p", sharex=True, labels = ["Raw Data", "Filtered"], title = "z Filtered")
     
     # Plotting the Integration Steps as Subplots
-    subplotting([[t],[t],[t]], [[rAX], [rAY], [rAZ]], [axes[0], ["x", "y", "z"]])
+    # subplotting([[t],[t],[t]], [[rAX], [rAY], [rAZ]], [axes[0], ["x", "y", "z"]])
     # subplotting([[t],[t],[t]], [[fAX], [fAY], [fAZ]], [axes[0], ["x", "y", "z"]])
-    subplotting([[t],[t],[t]], [[rAY], [rVY], [rY]], [axes[0], axes[1:4]], title="y Integration Steps")
+    # subplotting([[t],[t],[t]], [[rAY], [rVY], [rY]], [axes[0], axes[1:4]], title="y Integration Steps")
     # subplotting([[t],[t],[t]], [[fGX], [fGY], [fGZ]], [axes[0], ["Angular Velocity\n(deg/s)", "Angular Velocity\n(deg/s)", "Angular Velocity\n(deg/s)"]])
     # subplotting([[t],[t],[t]], [[rAZ], [rVZ], [rZ]], [axes[0], axes[1:4]], title="z Integration Steps")
 

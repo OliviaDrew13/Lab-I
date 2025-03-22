@@ -71,6 +71,7 @@ def plotting(x, y, xyLabels, labels, types, labelsOn = True, xExtents = None, yE
     # Applying legend if true
     if labelsOn == True:
         ax.legend()
+    ax.set_aspect("equal")
     
 def fx(t):
     qt = len(t)//6
