@@ -4,10 +4,10 @@
 
 import serial
 import time
-
+print("1")
 #establish serial connection to Arduino/GY521
-ser = serial.Serial('COM6', 250000) #Baud rate 38400 Hz, COM port must match.
-
+ser = serial.Serial('COM6', 38400) #Baud rate 38400 Hz, COM port must match.
+print("2")
 for i in range(0,3):
     #Inital lines from GY521, we can ignore them
     Junk = ser.readline(100)
@@ -60,7 +60,7 @@ except KeyboardInterrupt:
     timestr = time.strftime("%d_%m_%Y") 
     
     Filename = input("Enter Filename:")
-    f = open("DataDay2SRFix/" + Filename + '_' + timestr + '_Data.txt','w')
+    f = open("DataDay4/" + Filename + '_' + timestr + '_Data.txt','w')
     f.write('Time\tax\tay\taz\tgx\tgy\tgz\n')
     for i in range(len(ax)):
         f.write('%s\t%s\t%s\t%s\t%s\t%s\t%s\n' % (t[i],ax[i],ay[i],az[i],gx[i],gy[i],gz[i]))
