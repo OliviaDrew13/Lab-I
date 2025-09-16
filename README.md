@@ -1,6 +1,4 @@
 # Lab-I
  Lab I code
 
-Still figuring all of this out
-
-Sup
+Code to interface with an arduino and analyse the resulting acceleration and gyroscopic datat. This produces a very basic motion tracker.
